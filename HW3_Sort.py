@@ -129,7 +129,7 @@ def run_sort(function_name, data, progress_callback=None):
         return QuickSort(data, 0, len(data) - 1, progress_callback)
     raise ValueError(f"Unknown sort function: {function_name}")
 
-# 在 GUI 外開一個 process 執行演算法，並把結果傳給 GUI
+# 開額外 process 執行演算法
 def sort_worker(function_name, data, output_queue):
     last_progress = -1
     expected = sorted(data)
@@ -151,7 +151,7 @@ def sort_worker(function_name, data, output_queue):
     except Exception as exc:
         output_queue.put(("error", str(exc), None))
 
-# 啟動演算法
+# 啟動演算法程式
 def benchmark_one(name, function_name, numbers, stop_event, active_processes, process_lock, progress_callback):
     output_queue = multiprocessing.Queue()
     process = multiprocessing.Process(
