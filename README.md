@@ -71,3 +71,5 @@ def QuickSort(Array,Start,End):
 
 ## 實際跑程式
 
+### 初始畫面
+![](初始畫面.png)
