@@ -9,18 +9,25 @@ from tkinter import messagebox, ttk
 # 選擇排序(Selection sort)
 def SelectSort(Array, progress_callback=None):
     n = len(Array)
+
+    # 初始化計算進度條
     if progress_callback:
         progress_callback(0)
 
+    # 從陣列左到右依序選每個數字
     for i in range(len(Array)):
         min_index = i
-
+        
+        # 找陣列中被選數字的右邊裡最小的數字
         for j in range(i+1, len(Array)):
+
+            # 如果最小數字 < 被選數字，兩個就交換
             if Array[j] < Array[min_index]:
                 min_index = j
 
         Array[i], Array[min_index] = Array[min_index], Array[i]
 
+        # 回報演算法進度
         if progress_callback:
             progress_callback(((i + 1) / n) * 100)
 
@@ -28,6 +35,8 @@ def SelectSort(Array, progress_callback=None):
 
 # 泡泡排序(Bubble sort)
 def BubbleSort(Array, progress_callback=None):
+
+    # 初始化計算進度條
     n = len(Array)
     total_steps = n * (n - 1) // 2
     done_steps = 0
@@ -37,10 +46,13 @@ def BubbleSort(Array, progress_callback=None):
         progress_callback(0)
 
     for i in range(n-1):
+
+        # 陣列中每個數字跟右邊那個比大小，左 > 右的話交換
         for j in range(i+1, n):
             if Array[i] > Array[j]:
                 Array[i],Array[j] = Array[j],Array[i]
 
+            # 回報演算法進度
             done_steps += 1
             if progress_callback and done_steps % update_interval == 0:
                 progress_callback((done_steps / total_steps) * 100)
@@ -52,6 +64,8 @@ def BubbleSort(Array, progress_callback=None):
 
 # 快速排序(Quick sort)
 def QuickSort(Array,Start,End, progress_callback=None, progress_state=None):
+
+    # 初始化計算進度條
     if progress_callback and progress_state is None:
         progress_state = {"total": len(Array), "done": 0}
         progress_callback(0)
@@ -62,22 +76,34 @@ def QuickSort(Array,Start,End, progress_callback=None, progress_state=None):
             progress_callback((progress_state["done"] / progress_state["total"]) * 100)
         return Array
 
+    # 設定好左右指標以及pivot
     pivot = Array[Start]
     left = Start
     right = End
 
+    # 重複直到左右指標重疊
     while left < right:
+
+        # 右指標走到小於pivot
         while Array[right] >= pivot and right > left:
             right -= 1
+
+        # 左指標走到大於pivot
         while Array[left] <= pivot and right > left:
             left += 1
+        
+        # 兩個交換
         Array[left], Array[right] = Array[right], Array[left]
+    
+    # 指標重疊時，pivot移到右指標位置
     Array[Start], Array[right] = Array[right], Array[Start]
 
+    # 回報演算法進度
     if progress_callback and progress_state:
         progress_state["done"] += 1
         progress_callback((progress_state["done"] / progress_state["total"]) * 100)
 
+    # 遞迴將陣列分兩部分並分別做一樣的事
     QuickSort(Array,Start,right-1, progress_callback, progress_state)
     QuickSort(Array,right+1,End, progress_callback, progress_state)
 
@@ -93,7 +119,7 @@ SORT_ALGORITHMS = (
     ("Quick Sort", "QuickSort"),
 )
 
-
+# 定義三個演算法
 def run_sort(function_name, data, progress_callback=None):
     if function_name == "SelectSort":
         return SelectSort(data, progress_callback)
@@ -103,7 +129,7 @@ def run_sort(function_name, data, progress_callback=None):
         return QuickSort(data, 0, len(data) - 1, progress_callback)
     raise ValueError(f"Unknown sort function: {function_name}")
 
-
+# 在 GUI 外開一個 process 執行演算法，並把結果傳給 GUI
 def sort_worker(function_name, data, output_queue):
     last_progress = -1
     expected = sorted(data)
@@ -125,7 +151,7 @@ def sort_worker(function_name, data, output_queue):
     except Exception as exc:
         output_queue.put(("error", str(exc), None))
 
-
+# 啟動演算法
 def benchmark_one(name, function_name, numbers, stop_event, active_processes, process_lock, progress_callback):
     output_queue = multiprocessing.Queue()
     process = multiprocessing.Process(
@@ -191,8 +217,10 @@ def benchmark_one(name, function_name, numbers, stop_event, active_processes, pr
         with process_lock:
             active_processes.pop(name, None)
 
-
+# GUI 介面
 class SortBenchmarkGUI:
+
+    # GUI 初始設定
     def __init__(self, root):
         self.root = root
         self.root.title("排序演算法效能比較")
@@ -214,6 +242,7 @@ class SortBenchmarkGUI:
 
         self._build_ui()
 
+    # 設定 GUI 要有的功能
     def _build_ui(self):
         main = ttk.Frame(self.root, padding=18)
         main.pack(fill="both", expand=True)
@@ -286,6 +315,7 @@ class SortBenchmarkGUI:
         ttk.Label(main, textvariable=self.fastest_var, anchor="w").pack(fill="x", pady=(0, 4))
         ttk.Label(main, textvariable=self.elapsed_var, anchor="w").pack(fill="x", pady=(0, 4))
 
+    # 開始執行
     def start_benchmark(self):
         if self.is_running:
             return
@@ -315,6 +345,7 @@ class SortBenchmarkGUI:
         worker = threading.Thread(target=self._run_benchmark, args=(n,), daemon=True)
         worker.start()
 
+    # 強制停止
     def stop_benchmark(self):
         if not self.is_running:
             return
@@ -323,6 +354,7 @@ class SortBenchmarkGUI:
         self.status_var.set("正在強制停止...")
         self.stop_button.config(state="disabled")
 
+    # 確保關掉 app
     def close_app(self):
         self.stop_event.set()
 
@@ -336,6 +368,7 @@ class SortBenchmarkGUI:
 
         self.root.destroy()
 
+    # 三個演算法跑的當下，GUI 要做什麼
     def _run_benchmark(self, n):
         try:
             upper_bound = max(n * 10, n + 1)
@@ -365,6 +398,7 @@ class SortBenchmarkGUI:
         except Exception as exc:
             self.root.after(0, self._show_error, str(exc))
 
+    # call 三個演算法跑
     def _run_algorithm(self, name, function_name, numbers, results, results_lock):
         status, seconds_or_message, is_correct = benchmark_one(
             name,
@@ -390,9 +424,11 @@ class SortBenchmarkGUI:
 
         self.root.after(0, self._mark_algorithm_finished, name, status)
 
+    # 演算法開始訊號
     def _mark_algorithm_started(self, name):
         self._set_algorithm_progress(name, 0)
 
+    # 演算法結束訊號
     def _mark_algorithm_finished(self, name, status):
         if status == "stopped":
             self.percent_vars[name].set("停止")
@@ -401,11 +437,13 @@ class SortBenchmarkGUI:
         self.completed_count += 1
         self.status_var.set(f"已完成 {self.completed_count}/{len(SORT_ALGORITHMS)} 個演算法")
 
+    # 演算法跑的過程
     def _set_algorithm_progress(self, name, value):
         value = max(0, min(100, value))
         self.progress_vars[name].set(value)
         self.percent_vars[name].set(f"{int(value)}%")
 
+    # 顯示結果
     def _show_results(self, results, total_seconds):
         order = {name: index for index, (name, _) in enumerate(SORT_ALGORITHMS)}
         successful = [(name, seconds) for name, seconds, _ in results if seconds is not None]
@@ -444,21 +482,24 @@ class SortBenchmarkGUI:
             self.status_var.set("測試完成")
         self._finish_run()
 
+    # 如果有錯時的程式
     def _show_error(self, message):
         self.status_var.set("測試中止")
         messagebox.showerror("測試失敗", message)
         self._finish_run()
 
+    # 結束三個演算法的程式
     def _finish_run(self):
         self.is_running = False
         self.run_button.config(state="normal")
         self.stop_button.config(state="disabled")
 
+    # 清除結果的程式
     def _clear_results(self):
         for item in self.result_tree.get_children():
             self.result_tree.delete(item)
 
-
+# 初始化 APP
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     root = tk.Tk()
